@@ -217,33 +217,47 @@ function setupEventListeners() {
         UI.sendMessage();
     });
 
-    // Voice message - Hold to record
+    // Voice message - Click to Toggle Record/Stop
     const voiceBtn = document.getElementById('voice-message-btn');
-    let isHoldingVoice = false;
+    let isToggling = false;
 
-    voiceBtn?.addEventListener('mousedown', () => {
-        isHoldingVoice = true;
-        VoiceRecorder.startRecording();
-        voiceBtn.classList.add('recording');
-        voiceBtn.style.background = 'rgba(239, 68, 68, 0.2)';
-    });
+    voiceBtn?.addEventListener('click', async () => {
+        if (isToggling) return;
+        isToggling = true;
 
-    voiceBtn?.addEventListener('mouseup', () => {
-        if (isHoldingVoice) {
+        if (!VoiceRecorder.isRecording) {
+            // Start Recording
+            voiceBtn.style.opacity = '0.5'; // Visual feedback for initialization
+            const started = await VoiceRecorder.startRecording();
+            voiceBtn.style.opacity = '1';
+
+            if (started) {
+                voiceBtn.classList.add('recording');
+                voiceBtn.style.color = '#ef4444'; // Red
+                voiceBtn.innerHTML = `
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="6" y="6" width="12" height="12"></rect>
+                    </svg>
+                `; // Stop icon
+                voiceBtn.title = "Stop Recording";
+            }
+        } else {
+            // Stop Recording
             VoiceRecorder.stopRecording();
             voiceBtn.classList.remove('recording');
-            voiceBtn.style.background = '';
-            isHoldingVoice = false;
+            voiceBtn.style.color = '';
+            voiceBtn.innerHTML = `
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                    <line x1="12" y1="19" x2="12" y2="23"></line>
+                    <line x1="8" y1="23" x2="16" y2="23"></line>
+                </svg>
+            `; // Mic icon
+            voiceBtn.title = "Send Voice Message";
         }
-    });
 
-    voiceBtn?.addEventListener('mouseleave', () => {
-        if (isHoldingVoice) {
-            VoiceRecorder.stopRecording();
-            voiceBtn.classList.remove('recording');
-            voiceBtn.style.background = '';
-            isHoldingVoice = false;
-        }
+        isToggling = false;
     });
 
     // Voice call

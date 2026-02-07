@@ -222,5 +222,22 @@ const API = {
         }
         
         return data;
+    },
+
+    // Messages
+    async getMessages(friendId) {
+        const response = await fetch(`${CONFIG.API_URL}/messages/${friendId}`, {
+            headers: {
+                'Authorization': `Bearer ${AppState.token}`
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to get messages');
+        }
+        
+        return data;
     }
 };

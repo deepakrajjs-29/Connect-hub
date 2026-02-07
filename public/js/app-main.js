@@ -214,6 +214,35 @@ function setupEventListeners() {
         UI.sendMessage();
     });
 
+    // Voice message - Hold to record
+    const voiceBtn = document.getElementById('voice-message-btn');
+    let isHoldingVoice = false;
+
+    voiceBtn?.addEventListener('mousedown', () => {
+        isHoldingVoice = true;
+        VoiceRecorder.startRecording();
+        voiceBtn.classList.add('recording');
+        voiceBtn.style.background = 'rgba(239, 68, 68, 0.2)';
+    });
+
+    voiceBtn?.addEventListener('mouseup', () => {
+        if (isHoldingVoice) {
+            VoiceRecorder.stopRecording();
+            voiceBtn.classList.remove('recording');
+            voiceBtn.style.background = '';
+            isHoldingVoice = false;
+        }
+    });
+
+    voiceBtn?.addEventListener('mouseleave', () => {
+        if (isHoldingVoice) {
+            VoiceRecorder.stopRecording();
+            voiceBtn.classList.remove('recording');
+            voiceBtn.style.background = '';
+            isHoldingVoice = false;
+        }
+    });
+
     // Voice call
     document.getElementById('voice-call-btn')?.addEventListener('click', () => {
         if (AppState.currentChatFriend) {

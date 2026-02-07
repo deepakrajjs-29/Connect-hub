@@ -464,6 +464,112 @@ const UI = {
         console.log(`[${type.toUpperCase()}] ${title}: ${message}`);
     },
 
+    // Groups
+    renderGroups() {
+        const groupsList = document.getElementById('groups-list');
+        if (!groupsList) return;
+
+        groupsList.innerHTML = '';
+
+        if (!AppState.groups || AppState.groups.length === 0) {
+            groupsList.innerHTML = '<div style="padding: 10px; color: #72767d; font-size: 12px; text-align: center;">No groups yet</div>';
+            return;
+        }
+
+        AppState.groups.forEach(group => {
+            const groupItem = document.createElement('div');
+            groupItem.className = 'channel-item';
+            groupItem.dataset.groupId = group.id;
+            groupItem.innerHTML = `
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+                <span>${this.escapeHtml(group.name)}</span>
+            `;
+
+            groupItem.addEventListener('click', () => {
+                this.openGroupChat(group.id);
+            });
+
+            groupsList.appendChild(groupItem);
+        });
+    },
+
+    async openGroupChat(groupId) {
+        const group = AppState.groups.find(g => g.id === groupId);
+        if (!group) return;
+
+        AppState.currentGroup = group;
+        AppState.currentChatFriend = null;
+
+        // Update UI
+        document.getElementById('chat-header-name').textContent = group.name;
+        document.getElementById('chat-header-status').textContent = `${group.members.length} members`;
+
+        // Load group messages
+        try {
+            const { messages } = await API.getGroupMessages(groupId);
+            AppState.groupMessages.set(groupId, messages || []);
+            this.renderGroupMessages(groupId);
+        } catch (error) {
+            console.error('Error loading group messages:', error);
+        }
+
+        // Show chat area
+        document.getElementById('chat-area').style.display = 'flex';
+        document.getElementById('friends-list').style.display = 'none';
+    },
+
+    renderGroupMessages(groupId) {
+        const messagesContainer = document.getElementById('messages-container');
+        const messages = AppState.groupMessages.get(groupId) || [];
+
+        messagesContainer.innerHTML = '';
+
+        messages.forEach(msg => {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+
+            const isOwn = msg.sender_id === AppState.currentUser.id;
+            if (isOwn) {
+                messageDiv.classList.add('own-message');
+            }
+
+            const time = new Date(msg.created_at).toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            messageDiv.innerHTML = `
+                <img src="${msg.sender_avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'}" alt="Avatar" class="message-avatar">
+                <div class="message-content">
+                    <div class="message-header">
+                        <span class="message-sender">${this.escapeHtml(msg.sender_username)}</span>
+                        <span class="message-time">${time}</span>
+                    </div>
+                    <div class="message-text">${this.escapeHtml(msg.message)}</div>
+                </div>
+            `;
+
+            messagesContainer.appendChild(messageDiv);
+        });
+
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    },
+
+    async loadGroups() {
+        try {
+            const { groups } = await API.getGroups();
+            AppState.groups = groups || [];
+            this.renderGroups();
+        } catch (error) {
+            console.error('Error loading groups:', error);
+        }
+    },
+
     // Utility
     escapeHtml(text) {
         const div = document.createElement('div');

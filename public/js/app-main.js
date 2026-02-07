@@ -119,6 +119,9 @@ function setupEventListeners() {
             // Load friends data
             await UI.loadFriendsData();
 
+            // Load groups
+            await UI.loadGroups();
+
             // Show app
             UI.updateUserProfile(user);
             UI.showAppScreen();
@@ -358,7 +361,9 @@ function setupEventListeners() {
                 createGroupModal.style.display = 'none';
                 nameInput.value = '';
                 alert('Group created successfully!');
-                //Ideally, refresh group list here
+                
+                // Refresh group list
+                await UI.loadGroups();
             } catch (error) {
                 console.error('Failed to create group:', error);
                 alert('Error creating group');

@@ -5,13 +5,23 @@ const WebRTCManager = {
             AppState.callType = callType;
             AppState.callPeer = friendId;
 
-            // Get user media
+            // Get user media with optimized constraints
             const constraints = {
-                audio: true,
-                video: callType === 'video'
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true
+                },
+                video: callType === 'video' ? {
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 },
+                    frameRate: { ideal: 30 }
+                } : false
             };
 
+            console.log('Requesting media with constraints:', constraints);
             AppState.localStream = await navigator.mediaDevices.getUserMedia(constraints);
+            console.log('Got local stream:', AppState.localStream.getTracks());
 
             // Display local video
             const localVideo = document.getElementById('local-video');
@@ -91,8 +101,31 @@ const WebRTCManager = {
             
             if (AppState.peerConnection.connectionState === 'disconnected' ||
                 AppState.peerConnection.connectionState === 'failed') {
+                console.error('Call connection failed or disconnected');
                 this.endCall();
             }
+            
+            if (AppState.peerConnection.connectionState === 'connected') {
+                console.log('Call successfully connected!');
+            }
+        };
+
+        // Monitor ICE connection state
+        AppState.peerConnection.oniceconnectionstatechange = () => {
+            console.log('ICE connection state:', AppState.peerConnection.iceConnectionState);
+            
+            if (AppState.peerConnection.iceConnectionState === 'failed') {
+                console.error('ICE connection failed - may need TURN server');
+            }
+            
+            if (AppState.peerConnection.iceConnectionState === 'connected') {
+                console.log('ICE connection established successfully!');
+            }
+        };
+
+        // Monitor ICE gathering state
+        AppState.peerConnection.onicegatheringstatechange = () => {
+            console.log('ICE gathering state:', AppState.peerConnection.iceGatheringState);
         };
     },
 

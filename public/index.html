@@ -14,6 +14,7 @@
     <!-- Styles -->
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="css/additional-styles.css">
+    <link rel="stylesheet" href="css/group-styles.css">
     
     <!-- Socket.IO Client -->
     <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
@@ -328,6 +329,15 @@
                         </svg>
                     </button>
                     
+                    <button id="toggle-screen-btn" class="call-btn" title="Share Screen">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                            <line x1="8" y1="21" x2="16" y2="21"></line>
+                            <line x1="12" y1="17" x2="12" y2="21"></line>
+                            <path d="M7 10l5 3 5-3"></path>
+                        </svg>
+                    </button>
+                    
                     <button id="end-call-btn" class="call-btn end-call" title="End call">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
@@ -365,6 +375,24 @@
                     </button>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Create Group Modal -->
+    <div id="create-group-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Create New Group</h2>
+            <div class="form-group">
+                <input type="text" id="group-name-input" placeholder="Group Name" required>
+            </div>
+            <div class="form-group">
+                <h3>Select Members</h3>
+                <div id="group-members-list" class="members-selection-list">
+                    <!-- Members will be dynamically added here -->
+                </div>
+            </div>
+            <button id="create-group-confirm-btn" class="primary-btn">Create Group</button>
         </div>
     </div>
 

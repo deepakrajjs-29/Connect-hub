@@ -241,6 +241,12 @@ function setupEventListeners() {
         e.currentTarget.title = enabled ? 'Turn off camera' : 'Turn on camera';
     });
 
+    document.getElementById('toggle-screen-btn')?.addEventListener('click', (e) => {
+        const isSharing = WebRTCManager.toggleScreenShare();
+        e.currentTarget.classList.toggle('active', isSharing);
+        e.currentTarget.title = isSharing ? 'Stop Sharing' : 'Share Screen';
+    });
+
     document.getElementById('end-call-btn')?.addEventListener('click', () => {
         WebRTCManager.endCall();
     });
@@ -253,6 +259,83 @@ function setupEventListeners() {
     document.getElementById('reject-call-btn')?.addEventListener('click', () => {
         WebRTCManager.rejectCall();
     });
+
+    // --- GROUP CREATION LOGIC ---
+    const createGroupModal = document.getElementById('create-group-modal');
+    const closeGroupModal = createGroupModal?.querySelector('.close-modal');
+    // Using the same server add button (+ button)
+    const addServerBtn = document.getElementById('add-server-btn'); 
+    const confirmCreateGroupBtn = document.getElementById('create-group-confirm-btn');
+
+    if (addServerBtn && createGroupModal) {
+        addServerBtn.addEventListener('click', () => {
+            createGroupModal.style.display = 'block';
+            populateGroupMembers();
+        });
+    }
+
+    if (closeGroupModal) {
+        closeGroupModal.addEventListener('click', () => {
+             createGroupModal.style.display = 'none';
+        });
+    }
+    
+    window.addEventListener('click', (e) => {
+        if (e.target === createGroupModal) {
+            createGroupModal.style.display = 'none';
+        }
+    });
+
+    function populateGroupMembers() {
+        const list = document.getElementById('group-members-list');
+        if (!list) return;
+        list.innerHTML = '';
+        
+        AppState.friends.forEach(friend => {
+            const div = document.createElement('div');
+            // Checkbox for each friend
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.id = `friend-${friend.id}`;
+            checkbox.value = friend.id;
+
+            const label = document.createElement('label');
+            label.htmlFor = `friend-${friend.id}`;
+            label.textContent = friend.username;
+            label.style.marginLeft = '8px';
+
+            div.appendChild(checkbox);
+            div.appendChild(label);
+            list.appendChild(div);
+        });
+    }
+
+    if (confirmCreateGroupBtn) {
+        confirmCreateGroupBtn.addEventListener('click', async () => {
+            const nameInput = document.getElementById('group-name-input');
+            const name = nameInput.value.trim();
+            
+            if (!name) {
+                alert('Please enter a group name');
+                return;
+            }
+
+            const list = document.getElementById('group-members-list');
+            const selectedMembers = Array.from(list.querySelectorAll('input:checked'))
+                .map(cb => cb.value);
+
+            try {
+                await API.createGroup(name, selectedMembers);
+                createGroupModal.style.display = 'none';
+                nameInput.value = '';
+                alert('Group created successfully!');
+                //Ideally, refresh group list here
+            } catch (error) {
+                console.error('Failed to create group:', error);
+                alert('Error creating group');
+            }
+        });
+    }
 }
 
 // Make UI functions globally accessible for onclick handlers

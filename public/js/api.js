@@ -153,5 +153,74 @@ const API = {
         }
         
         return data;
+    },
+
+    // Messages
+    async getMessages(userId) {
+        const response = await fetch(`${CONFIG.API_URL}/messages/${userId}`, {
+            headers: {
+                'Authorization': `Bearer ${AppState.token}`
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to get messages');
+        }
+        
+        return data;
+    },
+
+    // Groups
+    async createGroup(name, memberIds = []) {
+        const response = await fetch(`${CONFIG.API_URL}/groups`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${AppState.token}`
+            },
+            body: JSON.stringify({ name, memberIds })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to create group');
+        }
+        
+        return data;
+    },
+
+    async getGroups() {
+        const response = await fetch(`${CONFIG.API_URL}/groups`, {
+            headers: {
+                'Authorization': `Bearer ${AppState.token}`
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to get groups');
+        }
+        
+        return data;
+    },
+
+    async getGroupMessages(groupId) {
+        const response = await fetch(`${CONFIG.API_URL}/groups/${groupId}/messages`, {
+            headers: {
+                'Authorization': `Bearer ${AppState.token}`
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to get group messages');
+        }
+        
+        return data;
     }
 };

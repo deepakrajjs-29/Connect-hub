@@ -27,5 +27,12 @@ const AppState = {
     callActive: false,
     callType: null, // 'video' or 'voice'
     callPeer: null,
-    typingTimeout: null
+    typingTimeout: null,
+    // Screen sharing
+    isScreenSharing: false,
+    cameraStream: null,
+    // Groups
+    groups: [],
+    currentGroup: null,
+    groupMessages: new Map() // groupId -> messages array
 };

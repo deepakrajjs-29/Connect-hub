@@ -243,5 +243,95 @@ const WebRTCManager = {
 
         // Hide call UI
         UI.hideVideoCallModal();
+    },
+
+    // Screen Sharing
+    async startScreenShare() {
+        try {
+            // Get screen stream
+            const screenStream = await navigator.mediaDevices.getDisplayMedia({
+                video: {
+                    cursor: 'always'
+                },
+                audio: false
+            });
+
+            // Get the video track from screen
+            const screenTrack = screenStream.getVideoTracks()[0];
+
+            // Find the sender that's sending video
+            const videoSender = AppState.peerConnection.getSenders().find(
+                sender => sender.track && sender.track.kind === 'video'
+            );
+
+            if (videoSender) {
+                // Replace camera track with screen track
+                videoSender.replaceTrack(screenTrack);
+            }
+
+            // Update local video to show screen
+            const localVideo = document.getElementById('local-video');
+            localVideo.srcObject = screenStream;
+
+            // Store original camera stream
+            AppState.cameraStream = AppState.localStream;
+            AppState.localStream = screenStream;
+            AppState.isScreenSharing = true;
+
+            // Handle when user stops sharing via browser UI
+            screenTrack.onended = () => {
+                this.stopScreenShare();
+            };
+
+            return true;
+        } catch (error) {
+            console.error('Error starting screen share:', error);
+            alert('Failed to start screen sharing');
+            return false;
+        }
+    },
+
+    async stopScreenShare() {
+        if (!AppState.isScreenSharing || !AppState.cameraStream) return;
+
+        try {
+            // Stop screen stream
+            AppState.localStream.getTracks().forEach(track => track.stop());
+
+            // Get camera video track
+            const cameraTrack = AppState.cameraStream.getVideoTracks()[0];
+
+            // Find the sender that's sending video
+            const videoSender = AppState.peerConnection.getSenders().find(
+                sender => sender.track && sender.track.kind === 'video'
+            );
+
+            if (videoSender && cameraTrack) {
+                // Replace screen track with camera track
+                videoSender.replaceTrack(cameraTrack);
+            }
+
+            // Update local video to show camera
+            const localVideo = document.getElementById('local-video');
+            localVideo.srcObject = AppState.cameraStream;
+
+            // Restore camera stream
+            AppState.localStream = AppState.cameraStream;
+            AppState.cameraStream = null;
+            AppState.isScreenSharing = false;
+
+            return true;
+        } catch (error) {
+            console.error('Error stopping screen share:', error);
+            return false;
+        }
+    },
+
+    toggleScreenShare() {
+        if (AppState.isScreenSharing) {
+            return this.stopScreenShare();
+        } else {
+            return this.startScreenShare();
+        }
     }
 };

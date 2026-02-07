@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const { users } = require('../routes/auth');
+const db = require('../database/db');
 
 // Store active socket connections
 const activeConnections = new Map(); // userId -> socketId
@@ -65,6 +66,13 @@ function setupSocketHandlers(io) {
                 message,
                 timestamp: timestamp || new Date().toISOString()
             };
+
+            // Save message to database for permanent storage
+            try {
+                db.saveMessage(socket.userId, recipientId, message, messageData.timestamp);
+            } catch (error) {
+                console.error('Error saving message to database:', error);
+            }
 
             // Send to recipient if online
             if (recipientSocketId) {

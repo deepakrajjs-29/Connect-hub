@@ -7,6 +7,7 @@ const path = require('path');
 
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
+const messagesRoutes = require('./routes/messages');
 const { setupSocketHandlers } = require('./socket/socketHandlers');
 
 const app = express();
@@ -33,6 +34,7 @@ app.use(express.static(path.join(__dirname, '../public')));
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api', messagesRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

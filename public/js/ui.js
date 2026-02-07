@@ -205,7 +205,7 @@ const UI = {
     },
 
     // Chat
-    openChat(friendId) {
+    async openChat(friendId) {
         const friend = AppState.friends.find(f => f.id === friendId);
         if (!friend) return;
 
@@ -220,6 +220,28 @@ const UI = {
 
         // Show chat view
         this.switchView('chat');
+
+        // Load messages from database
+        try {
+            const { messages } = await API.getMessages(friendId);
+            
+            // Convert database messages to app format
+            const formattedMessages = messages.map(msg => ({
+                from: msg.from_user_id,
+                message: msg.message,
+                timestamp: msg.timestamp,
+                type: msg.from_user_id === AppState.currentUser.id ? 'sent' : 'received'
+            }));
+
+            // Store in AppState
+            AppState.messages.set(friendId, formattedMessages);
+        } catch (error) {
+            console.error('Error loading messages:', error);
+            // Initialize empty if error
+            if (!AppState.messages.has(friendId)) {
+                AppState.messages.set(friendId, []);
+            }
+        }
 
         // Render messages
         this.renderMessages(friendId);

@@ -36,12 +36,30 @@ document.addEventListener('DOMContentLoaded', () => {
         animateFollower();
 
         // Hover effects
-        document.querySelectorAll('button, a, input, .clickable').forEach(el => {
+        document.querySelectorAll('button, a, input, .clickable, .friend-card, .channel-item').forEach(el => {
             el.addEventListener('mouseenter', () => cursor.classList.add('cursor-hover'));
             el.addEventListener('mouseleave', () => cursor.classList.remove('cursor-hover'));
         });
     }
 });
+
+// Create floating particles
+function createParticles() {
+    const particleCount = 20;
+    for (let i = 0; i < particleCount; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        particle.style.left = Math.random() * 100 + '%';
+        particle.style.animationDelay = Math.random() * 15 + 's';
+        particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
+        document.body.appendChild(particle);
+    }
+}
+
+// Initialize particles
+if (window.innerWidth > 768) {
+    createParticles();
+}
 
 // Scroll animations
 const observerOptions = {
@@ -57,4 +75,21 @@ const observer = new IntersectionObserver((entries) => {
     });
 }, observerOptions);
 
-document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+// Observe all animated elements
+document.querySelectorAll('.fade-in, .slide-in-left, .slide-in-right, .scale-in').forEach(el => {
+    observer.observe(el);
+});
+
+// Add gradient text effect to titles
+document.querySelectorAll('h1, h2, .title').forEach(el => {
+    if (!el.classList.contains('gradient-text')) {
+        el.classList.add('gradient-text');
+    }
+});
+
+// Add shimmer effect to buttons
+document.querySelectorAll('.modern-btn, .auth-btn, .primary-btn').forEach(btn => {
+    if (!btn.classList.contains('shimmer')) {
+        btn.classList.add('shimmer');
+    }
+});

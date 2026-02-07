@@ -1,0 +1,247 @@
+// WebRTC Manager for Video/Voice Calls
+const WebRTCManager = {
+    async initializeCall(friendId, callType) {
+        try {
+            AppState.callType = callType;
+            AppState.callPeer = friendId;
+
+            // Get user media
+            const constraints = {
+                audio: true,
+                video: callType === 'video'
+            };
+
+            AppState.localStream = await navigator.mediaDevices.getUserMedia(constraints);
+
+            // Display local video
+            const localVideo = document.getElementById('local-video');
+            localVideo.srcObject = AppState.localStream;
+
+            // Create peer connection
+            this.createPeerConnection();
+
+            // Add local stream to peer connection
+            AppState.localStream.getTracks().forEach(track => {
+                AppState.peerConnection.addTrack(track, AppState.localStream);
+            });
+
+            // Create offer
+            const offer = await AppState.peerConnection.createOffer();
+            await AppState.peerConnection.setLocalDescription(offer);
+
+            // Send offer through socket
+            AppState.socket.emit('call-user', {
+                targetUserId: friendId,
+                offer: offer,
+                callType: callType
+            });
+
+            // Show call UI
+            AppState.callActive = true;
+            UI.showVideoCallModal();
+
+        } catch (error) {
+            console.error('Error initializing call:', error);
+            alert('Failed to access camera/microphone. Please check permissions.');
+        }
+    },
+
+    createPeerConnection() {
+        AppState.peerConnection = new RTCPeerConnection({
+            iceServers: CONFIG.ICE_SERVERS
+        });
+
+        // Handle ICE candidates
+        AppState.peerConnection.onicecandidate = (event) => {
+            if (event.candidate) {
+                AppState.socket.emit('ice-candidate', {
+                    targetUserId: AppState.callPeer,
+                    candidate: event.candidate
+                });
+            }
+        };
+
+        // Handle remote stream
+        AppState.peerConnection.ontrack = (event) => {
+            if (!AppState.remoteStream) {
+                AppState.remoteStream = new MediaStream();
+                const remoteVideo = document.getElementById('remote-video');
+                remoteVideo.srcObject = AppState.remoteStream;
+            }
+
+            AppState.remoteStream.addTrack(event.track);
+            
+            // Show remote video container
+            document.getElementById('remote-video-container').style.display = 'block';
+        };
+
+        // Handle connection state changes
+        AppState.peerConnection.onconnectionstatechange = () => {
+            console.log('Connection state:', AppState.peerConnection.connectionState);
+            
+            if (AppState.peerConnection.connectionState === 'disconnected' ||
+                AppState.peerConnection.connectionState === 'failed') {
+                this.endCall();
+            }
+        };
+    },
+
+    async handleIncomingCall(data) {
+        const { from, fromUsername, offer, callType } = data;
+
+        AppState.callPeer = from;
+        AppState.callType = callType;
+
+        // Find friend info
+        const friend = AppState.friends.find(f => f.id === from);
+
+        // Show incoming call modal
+        UI.showIncomingCallModal(friend || { username: fromUsername, avatar: '' }, callType);
+
+        // Store offer for when user accepts
+        AppState.pendingOffer = offer;
+    },
+
+    async acceptCall() {
+        try {
+            // Get user media
+            const constraints = {
+                audio: true,
+                video: AppState.callType === 'video'
+            };
+
+            AppState.localStream = await navigator.mediaDevices.getUserMedia(constraints);
+
+            // Display local video
+            const localVideo = document.getElementById('local-video');
+            localVideo.srcObject = AppState.localStream;
+
+            // Create peer connection
+            this.createPeerConnection();
+
+            // Add local stream to peer connection
+            AppState.localStream.getTracks().forEach(track => {
+                AppState.peerConnection.addTrack(track, AppState.localStream);
+            });
+
+            // Set remote description from offer
+            await AppState.peerConnection.setRemoteDescription(new RTCSessionDescription(AppState.pendingOffer));
+
+            // Create answer
+            const answer = await AppState.peerConnection.createAnswer();
+            await AppState.peerConnection.setLocalDescription(answer);
+
+            // Send answer through socket
+            AppState.socket.emit('answer-call', {
+                targetUserId: AppState.callPeer,
+                answer: answer
+            });
+
+            // Show call UI
+            AppState.callActive = true;
+            UI.hideIncomingCallModal();
+            UI.showVideoCallModal();
+
+        } catch (error) {
+            console.error('Error accepting call:', error);
+            alert('Failed to access camera/microphone. Please check permissions.');
+        }
+    },
+
+    rejectCall() {
+        AppState.socket.emit('reject-call', {
+            targetUserId: AppState.callPeer
+        });
+
+        AppState.callPeer = null;
+        AppState.pendingOffer = null;
+        UI.hideIncomingCallModal();
+    },
+
+    async handleCallAnswered(data) {
+        const { answer } = data;
+
+        try {
+            await AppState.peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+        } catch (error) {
+            console.error('Error handling call answer:', error);
+        }
+    },
+
+    handleCallRejected(data) {
+        alert('Call was rejected');
+        this.endCall();
+    },
+
+    handleCallEnded(data) {
+        this.endCall();
+    },
+
+    async handleICECandidate(data) {
+        const { candidate } = data;
+
+        try {
+            if (AppState.peerConnection) {
+                await AppState.peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+            }
+        } catch (error) {
+            console.error('Error adding ICE candidate:', error);
+        }
+    },
+
+    toggleMicrophone() {
+        if (!AppState.localStream) return;
+
+        const audioTrack = AppState.localStream.getAudioTracks()[0];
+        if (audioTrack) {
+            audioTrack.enabled = !audioTrack.enabled;
+            return audioTrack.enabled;
+        }
+        return false;
+    },
+
+    toggleCamera() {
+        if (!AppState.localStream) return;
+
+        const videoTrack = AppState.localStream.getVideoTracks()[0];
+        if (videoTrack) {
+            videoTrack.enabled = !videoTrack.enabled;
+            return videoTrack.enabled;
+        }
+        return false;
+    },
+
+    endCall() {
+        // Notify peer
+        if (AppState.callPeer && AppState.socket) {
+            AppState.socket.emit('end-call', {
+                targetUserId: AppState.callPeer
+            });
+        }
+
+        // Stop all tracks
+        if (AppState.localStream) {
+            AppState.localStream.getTracks().forEach(track => track.stop());
+            AppState.localStream = null;
+        }
+
+        if (AppState.remoteStream) {
+            AppState.remoteStream.getTracks().forEach(track => track.stop());
+            AppState.remoteStream = null;
+        }
+
+        // Close peer connection
+        if (AppState.peerConnection) {
+            AppState.peerConnection.close();
+            AppState.peerConnection = null;
+        }
+
+        // Reset state
+        AppState.callActive = false;
+        AppState.callPeer = null;
+        AppState.callType = null;
+
+        // Hide call UI
+        UI.hideVideoCallModal();
+    }
+};

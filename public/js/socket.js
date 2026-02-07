@@ -98,7 +98,7 @@ const SocketManager = {
     },
 
     handleIncomingMessage(data) {
-        const { from, fromUsername, message, timestamp } = data;
+        const { from, fromUsername, message, timestamp, type } = data;
 
         // Store message
         if (!AppState.messages.has(from)) {
@@ -110,7 +110,8 @@ const SocketManager = {
             fromUsername,
             message,
             timestamp,
-            type: 'received'
+            type: 'received',
+            messageType: type || 'text'
         });
 
         // Update UI if chat is open with this friend

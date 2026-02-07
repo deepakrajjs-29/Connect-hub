@@ -57,19 +57,22 @@ function setupSocketHandlers(io) {
 
         // Handle direct messages
         socket.on('send-message', (data) => {
-            const { recipientId, message, timestamp } = data;
+            const { recipientId, message, timestamp, type } = data;
             const recipientSocketId = activeConnections.get(recipientId);
+
+            const messageType = type || 'text'; // 'text' or 'voice'
 
             const messageData = {
                 from: socket.userId,
                 fromUsername: socket.username,
                 message,
+                type: messageType,
                 timestamp: timestamp || new Date().toISOString()
             };
 
             // Save message to database for permanent storage
             try {
-                db.saveMessage(socket.userId, recipientId, message, messageData.timestamp);
+                db.saveMessage(socket.userId, recipientId, message, messageData.timestamp, messageType);
             } catch (error) {
                 console.error('Error saving message to database:', error);
             }

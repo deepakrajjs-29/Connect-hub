@@ -45,13 +45,14 @@ function writeJSON(filePath, data) {
 // Database functions
 const Database = {
     // Save a direct message
-    saveMessage(fromUserId, toUserId, message, timestamp) {
+    saveMessage(fromUserId, toUserId, message, timestamp, messageType = 'text') {
         const messages = readJSON(messagesFile);
         messages.push({
             id: Date.now() + Math.random(),
             from_user_id: fromUserId,
             to_user_id: toUserId,
             message: message,
+            message_type: messageType, // 'text' or 'voice'
             timestamp: timestamp,
             created_at: new Date().toISOString()
         });

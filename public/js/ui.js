@@ -230,7 +230,8 @@ const UI = {
                 from: msg.from_user_id,
                 message: msg.message,
                 timestamp: msg.timestamp,
-                type: msg.from_user_id === AppState.currentUser.id ? 'sent' : 'received'
+                type: msg.from_user_id === AppState.currentUser.id ? 'sent' : 'received',
+                messageType: msg.message_type || 'text'
             }));
 
             // Store in AppState
@@ -267,9 +268,16 @@ const UI = {
             
             const time = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             
+            let contentHtml = '';
+            if (msg.messageType === 'voice') {
+                contentHtml = `<audio controls src="${msg.message}" class="voice-message-player"></audio>`;
+            } else {
+                contentHtml = `<div class="message-text">${this.escapeHtml(msg.message)}</div>`;
+            }
+
             messageDiv.innerHTML = `
                 <div class="message-content">
-                    <div class="message-text">${this.escapeHtml(msg.message)}</div>
+                    ${contentHtml}
                     <div class="message-time">${time}</div>
                 </div>
             `;
@@ -298,7 +306,8 @@ const UI = {
             from: AppState.currentUser.id,
             message,
             timestamp: new Date().toISOString(),
-            type: 'sent'
+            type: 'sent',
+            messageType: 'text'
         });
 
         // Send through socket

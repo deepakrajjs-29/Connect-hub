@@ -55,28 +55,35 @@ const VoiceRecorder = {
             reader.onloadend = () => {
                 const base64Audio = reader.result;
                 
-                // Send through socket
-                AppState.socket.emit('send-message', {
-                    to: AppState.currentChatFriend.id,
-                    message: base64Audio,
-                    type: 'voice'
-                });
-
-                // Add to local messages
-                const voiceMessage = {
-                    from: AppState.currentUser.id,
+                const messageData = {
+                    recipientId: AppState.currentChatFriend.id,
                     message: base64Audio,
                     type: 'voice',
                     timestamp: new Date().toISOString()
                 };
 
-                if (!AppState.messages.has(AppState.currentChatFriend.id)) {
-                    AppState.messages.set(AppState.currentChatFriend.id, []);
+                // Send through socket
+                if (AppState.socket) {
+                    AppState.socket.emit('send-message', messageData);
                 }
-                AppState.messages.get(AppState.currentChatFriend.id).push(voiceMessage);
+
+                // Add to local messages
+                const voiceMessage = {
+                    from: AppState.currentUser.id,
+                    message: base64Audio,
+                    timestamp: messageData.timestamp,
+                    type: 'sent',
+                    messageType: 'voice'
+                };
+
+                const friendId = AppState.currentChatFriend.id;
+                if (!AppState.messages.has(friendId)) {
+                    AppState.messages.set(friendId, []);
+                }
+                AppState.messages.get(friendId).push(voiceMessage);
 
                 // Re-render messages
-                UI.renderMessages(AppState.currentChatFriend.id);
+                UI.renderMessages(friendId);
             };
         } catch (error) {
             console.error('Error sending voice message:', error);

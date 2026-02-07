@@ -63,16 +63,26 @@ const WebRTCManager = {
 
         // Handle remote stream
         AppState.peerConnection.ontrack = (event) => {
+            console.log('Received remote track:', event.track.kind);
+            
             if (!AppState.remoteStream) {
                 AppState.remoteStream = new MediaStream();
                 const remoteVideo = document.getElementById('remote-video');
                 remoteVideo.srcObject = AppState.remoteStream;
+                
+                // Ensure video plays
+                remoteVideo.play().catch(err => {
+                    console.log('Remote video autoplay failed:', err);
+                });
             }
 
             AppState.remoteStream.addTrack(event.track);
             
             // Show remote video container
-            document.getElementById('remote-video-container').style.display = 'block';
+            const remoteContainer = document.getElementById('remote-video-container');
+            remoteContainer.style.display = 'block';
+            
+            console.log('Remote video container shown');
         };
 
         // Handle connection state changes

@@ -291,13 +291,18 @@ const WebRTCManager = {
     // Screen Sharing
     async startScreenShare() {
         try {
+            console.log('Starting screen share...');
+            
             // Get screen stream
             const screenStream = await navigator.mediaDevices.getDisplayMedia({
                 video: {
-                    cursor: 'always'
+                    cursor: 'always',
+                    displaySurface: 'monitor'
                 },
                 audio: false
             });
+
+            console.log('Got screen stream:', screenStream.getTracks());
 
             // Get the video track from screen
             const screenTrack = screenStream.getVideoTracks()[0];
@@ -309,7 +314,11 @@ const WebRTCManager = {
 
             if (videoSender) {
                 // Replace camera track with screen track
-                videoSender.replaceTrack(screenTrack);
+                await videoSender.replaceTrack(screenTrack);
+                console.log('Screen track replaced successfully');
+            } else {
+                console.error('No video sender found');
+                return false;
             }
 
             // Update local video to show screen
@@ -323,9 +332,11 @@ const WebRTCManager = {
 
             // Handle when user stops sharing via browser UI
             screenTrack.onended = () => {
+                console.log('Screen sharing stopped by user');
                 this.stopScreenShare();
             };
 
+            console.log('Screen sharing started successfully');
             return true;
         } catch (error) {
             console.error('Error starting screen share:', error);
@@ -338,6 +349,8 @@ const WebRTCManager = {
         if (!AppState.isScreenSharing || !AppState.cameraStream) return;
 
         try {
+            console.log('Stopping screen share...');
+            
             // Stop screen stream
             AppState.localStream.getTracks().forEach(track => track.stop());
 
@@ -351,7 +364,8 @@ const WebRTCManager = {
 
             if (videoSender && cameraTrack) {
                 // Replace screen track with camera track
-                videoSender.replaceTrack(cameraTrack);
+                await videoSender.replaceTrack(cameraTrack);
+                console.log('Camera track restored successfully');
             }
 
             // Update local video to show camera
@@ -363,6 +377,7 @@ const WebRTCManager = {
             AppState.cameraStream = null;
             AppState.isScreenSharing = false;
 
+            console.log('Screen sharing stopped successfully');
             return true;
         } catch (error) {
             console.error('Error stopping screen share:', error);

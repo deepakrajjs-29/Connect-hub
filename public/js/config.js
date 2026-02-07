@@ -1,7 +1,10 @@
-// Configuration
+// Configuration - Auto-detect environment
+const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+const BASE_URL = isProduction ? window.location.origin : 'http://localhost:3000';
+
 const CONFIG = {
-    API_URL: 'http://localhost:3000/api',
-    SOCKET_URL: 'http://localhost:3000',
+    API_URL: `${BASE_URL}/api`,
+    SOCKET_URL: BASE_URL,
     ICE_SERVERS: [
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' }
